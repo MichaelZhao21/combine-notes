@@ -1,0 +1,10 @@
+{
+  "name": "combine-files",
+  "version": "1.0.0",
+  "description": "A small script that combines the pdfs of my notes that I upload onto google drive based on the name and prefixes of the files ",
+  "main": "index.js",
+  "repository": "https://github.com/MichaelZhao21/combine-files",
+  "author": "Michael Zhao <michaelzhao314@gmail.com>",
+  "license": "MIT",
+  "private": false
+}
