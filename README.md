@@ -5,12 +5,11 @@ A simple script to combine google drive files :D
 ## To Install
 
 ```bash
-git clone https://github.com/MichaelZhao21/combine-files.git
-cd combine-files
-yarn install
 ```
 
 ## Configuration
+
+Go to your Google Cloud API console and create a project, then download an OAuth 2.0 credentials file and move it into a file called 'creds.json'
 
 Create a json file named `data.json` with the following contents:
 
