@@ -1,10 +1,13 @@
-# combine-files
+# combine-notes
 
 A simple script to combine google drive files :D
 
 ## To Install
 
 ```bash
+git clone https://github.com/MichaelZhao21/combine-notes.git
+cd combine-notes
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -20,3 +23,11 @@ Create a json file named `data.json` with the following contents:
 ```
 
 To find the folderID, open the folder in google drive and the url should be `https://drive.google.com/drive/u/0/folders/[folderId]`
+
+## Running
+
+To run the program, create the configuration files and run the following command:
+
+```bash
+
+```
