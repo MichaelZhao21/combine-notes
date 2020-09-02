@@ -1,3 +1,5 @@
 creds.json
+data.json
 node_modules
 venv
+token.pickle
