@@ -11,9 +11,9 @@ SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 
 def main():
-    service = auth()
+    creds = auth()
     data = get_data()
-    combine(service, data)
+    combine(creds, data)
 
 
 def auth():
@@ -37,7 +37,7 @@ def auth():
             pickle.dump(creds, token)
 
     # Load the Drive v3 API
-    return build('drive', 'v3', credentials=creds)
+    return creds
 
 
 def get_data():
@@ -47,14 +47,18 @@ def get_data():
     return data
 
 
-def combine(service, data):
+def combine(creds, data):
     print(data['folderId'])
 
     folderId = data['folderId']
+    service = build('drive', 'v3', credentials=creds)
     # Find the given folder
     # pylint: disable=no-member
     results = service.files().list(
-        pageSize=10, fields="nextPageToken, files(id, name, parents, mimeType, modifiedTime)", q=f"{folderId} in parents").execute()
+        pageSize=10, 
+        fields="nextPageToken, files(id, name, parents, mimeType, modifiedTime)", 
+        spaces='drive', 
+        q=f"'{folderId}' in parents").execute()
     items = results.get('files', [])
 
     if not items:
