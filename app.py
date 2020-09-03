@@ -138,7 +138,8 @@ def parse_files(items, formats):
     return (fileGroups, count)
 
 
-def combine_pdfs():
+def combine_pdfs(service, fileGroups):
+    print(fileGroups)
 
 
 if __name__ == '__main__':
