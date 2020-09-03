@@ -2,18 +2,33 @@ from __future__ import print_function
 import pickle
 import os.path
 import json
+import re
+from collections import OrderedDict
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
 def main():
-    creds = auth()
+    print("Authenticating...")
+    service = auth()
+    print("Authentication Successful!")
+
+    print("Retrieving Data File...")
     data = get_data()
-    combine(creds, data)
+    print("Data File Retrieved Successfully!")
+
+    for d in data:        
+        print("Processing Folder ID:", d["folderId"])
+        items = get_files(service, d)
+        fileGroups, count = parse_files(items, d['formats'])
+        print("Loaded", count, "items!")
+
+        print("Combining PDFs...")
+        
 
 
 def auth():
@@ -37,7 +52,7 @@ def auth():
             pickle.dump(creds, token)
 
     # Load the Drive v3 API
-    return creds
+    return build('drive', 'v3', credentials=creds)
 
 
 def get_data():
@@ -47,26 +62,83 @@ def get_data():
     return data
 
 
-def combine(creds, data):
-    print(data['folderId'])
-
-    folderId = data['folderId']
-    service = build('drive', 'v3', credentials=creds)
+def get_files(service, data):
     # Find the given folder
+    folderId = data['folderId']
+
+    # Use API to get the list of files in the folder
     # pylint: disable=no-member
     results = service.files().list(
-        pageSize=10, 
-        fields="nextPageToken, files(id, name, parents, mimeType, modifiedTime)", 
-        spaces='drive', 
-        q=f"'{folderId}' in parents").execute()
+        fields="nextPageToken, files(id, name, parents, mimeType, modifiedTime)",
+        spaces='drive',
+        q=f"mimeType = 'application/pdf' and '{folderId}' in parents").execute()
     items = results.get('files', [])
 
     if not items:
-        print('No files found.')
+        return []
     else:
-        print('Files:')
-        for item in items:
-            print(u'{0} ({1})'.format(item['name'], item['id']))
+        return items
+
+
+def parse_files(items, formats):
+    count = 0
+    fileGroups = []
+    for f in formats:
+        mp = re.compile(f["master"])
+        p = re.compile(f["regex"])
+        if f["subgroup"] == -1:
+            d = {}
+            masterFile = None
+            for i in items:
+                m = p.match(i["name"])
+                ma = mp.match(i["name"])
+                if m:
+                    d[m.groups()[0]] = i["id"]
+                if ma:
+                    masterFile = i["id"]
+            if len(d) != 0:
+                od = OrderedDict(sorted(d.items()))
+                fileGroups.append({
+                    'subgroup': False,
+                    'files': list(od.values()), 
+                    'master': masterFile
+                })
+                count += len(od)
+        else:
+            if f["subgroup"] == 0:
+                a = 0
+                b = 1
+            else:
+                a = 1
+                b = 0
+            d = {}
+            masterFiles = {}
+            for i in items:
+                m = p.match(i["name"])
+                ma = mp.match(i["name"])
+                if m:
+                    g = m.groups()
+                    if g[a] not in d:
+                        d[g[a]] = {}
+                    d[g[a]][g[b]] = i["id"]
+                    count += 1
+                if ma:
+                    masterFiles[ma.groups()[0]] = i["id"]
+            d2 = {}
+            for item in d.items():
+                if len(item) != 0:
+                    od = OrderedDict(sorted(item[1].items()))
+                    d2[item[0]] = list(od.values())
+            if len(d2) != 0:
+                fileGroups.append({
+                    'subgroup': True,
+                    'files': d2, 
+                    'master': masterFiles
+                })
+    return (fileGroups, count)
+
+
+def combine_pdfs():
 
 
 if __name__ == '__main__':
