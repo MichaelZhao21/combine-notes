@@ -105,12 +105,9 @@ def parse_files(items, formats):
                 })
                 count += len(od)
         else:
-            if f["subgroup"] == 0:
-                a = 0
-                b = 1
-            else:
-                a = 1
-                b = 0
+            a, b = 0, 1
+            if f["subgroup"] == 1:
+                a, b = b, a
             d = {}
             masterFiles = {}
             for i in items:
