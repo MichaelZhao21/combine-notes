@@ -1,34 +1,41 @@
 from __future__ import print_function
 import pickle
-import os.path
+import os
 import json
 import re
+import io
+from pdfrw import PdfReader, PdfWriter
 from collections import OrderedDict
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
 def main():
-    # print("Authenticating...")
+    print("Authenticating...")
     service = auth()
-    # print("Authentication Successful!")
+    print("Authentication Successful!")
 
-    # print("Retrieving Data File...")
+    print("Retrieving Data File...")
     data = get_data()
-    # print("Data File Retrieved Successfully!")
+    print("Data File Retrieved Successfully!")
 
     for d in data:
-        # print("Processing Folder ID:", d["folderId"])
+        print("Processing Folder ID:", d["folderId"])
         items = get_files(service, d)
-        fileList, count = parse_files(items, d['formats'], d['folderId'])
-        # print("Loaded", count, "items!")
 
-        # print("Combining PDFs...")
-    combine_pdfs(service, fileList)
+        fileList, count = parse_files(items, d['formats'], d['folderId'])
+        print("Loaded", count, "items!")
+
+        if items > 0:
+            print("Combining PDFs...")
+            combine_pdfs(service, fileList)
+            print("Done!")
+
 
 
 def auth():
@@ -70,7 +77,8 @@ def get_files(service, data):
     # Use API to get the list of files in the folder
     while pageToken:
         # Check for placeholder pageToken and call the API
-        results = call_list_api(service, data['folderId'], pageToken if pageToken != True else None)
+        results = call_list_api(
+            service, data['folderId'], pageToken if pageToken != True else None)
 
         # Add the files to the list of items
         items += results.get('files', [])
@@ -139,11 +147,8 @@ def parse_files(items, formats, folderId):
                 vals = list(od.values())
 
                 # If the masterfile exists, insert it to the front
-                # Or else insert 'None'
                 if masterFile:
                     vals.insert(0, masterFile)
-                else:
-                    vals.insert(0, None)
 
                 # Append the current file group to the dictionary
                 fileList.append({
@@ -204,11 +209,8 @@ def parse_files(items, formats, folderId):
                     vals = list(od.values())
 
                     # If the masterfile exists, insert it to the front
-                    # Or else insert 'None'
                     if item[0] in masterFiles:
                         vals.insert(0, masterFiles[item[0]])
-                    else:
-                        vals.insert(0, None)
 
                     # Append the current file group to the dictionary
                     fileList.append({
@@ -227,15 +229,54 @@ def parse_files(items, formats, folderId):
 
 def combine_pdfs(service, fileList):
     for group in fileList:
-        print(group)
+        files = group['files']
+
+        for f in files:
+            download_pdf(service, f)
+
+        merge_pdf(service, group, files)
+        delete_pdfs(service, group)
+        upload_pdf(service, group)
 
 
 def download_pdf(service, fileId):
-    print(fileId)
+    request = service.files().get_media(fileId=fileId)
+    fh = io.FileIO(fileId, 'wb')
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    while done is False:
+        status, done = downloader.next_chunk()
+        prog = int(status.progress() * 100)
+        print(f'{fileId} Download {prog}%.')
 
 
-def merge_pdf(service, path):
-    print(path)
+def merge_pdf(service, group, files):
+    w = PdfWriter()
+    for fileId in files:
+        r = PdfReader(fileId)
+        for page in range(len(r.pages)):
+            w.addPage(r.pages[page])
+        os.remove(fileId)
+    with open('tmp.pdf', 'wb') as p:
+        w.write(p)
+
+
+def delete_pdfs(service, group):
+    for f in group["files"]:
+        service.files().delete(fileId=f, supportsTeamDrives=True,
+                               supportsAllDrives=True).execute()
+
+
+def upload_pdf(service, group):
+    if "subname" in group:
+        name = group["master"].replace('(\\d+)', str(group["subname"]))
+    else:
+        name = group["master"]
+    metadata = {'name': name, 'parents': [group['parent']]}
+    media = MediaFileUpload('tmp.pdf', mimetype="application/pdf")
+    f = service.files().create(body=metadata, media_body=media, fields='id').execute()
+    print('Created merged file ID: %s' % f.get('id'))
+    os.remove('tmp.pdf')
 
 
 if __name__ == '__main__':
