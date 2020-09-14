@@ -7,7 +7,10 @@ A simple script to combine google drive files :D
 ```bash
 git clone https://github.com/MichaelZhao21/combine-notes.git
 cd combine-notes
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+deactivate
 ```
 
 ## Configuration
@@ -29,5 +32,5 @@ To find the folderID, open the folder in google drive and the url should be `htt
 To run the program, create the configuration files and run the following command:
 
 ```bash
-
+./run
 ```
