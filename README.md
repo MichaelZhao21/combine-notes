@@ -7,10 +7,7 @@ A simple script to combine google drive files :D
 ```bash
 git clone https://github.com/MichaelZhao21/combine-notes.git
 cd combine-notes
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-deactivate
+./install
 ```
 
 ## Configuration
@@ -18,6 +15,8 @@ deactivate
 Go to your Google Cloud API console and create a project, then download an OAuth 2.0 credentials file and move it into a file called 'creds.json'
 
 Create a json file named `data.json` with the following contents:
+
+// TODO: Add complete config info
 
 ```json
 {
