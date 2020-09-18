@@ -31,7 +31,7 @@ def main():
         fileList, count = parse_files(items, d['formats'], d['folderId'])
         print("Loaded", count, "items!")
 
-        if items > 0:
+        if len(items) > 0:
             print("Combining PDFs...")
             combine_pdfs(service, fileList)
             print("Done!")
