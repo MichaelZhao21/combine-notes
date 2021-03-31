@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd ~/scripts/combine-notes
 source venv/bin/activate
 python3 app.py
 deactivate
