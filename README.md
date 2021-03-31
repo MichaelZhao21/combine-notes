@@ -27,18 +27,17 @@ Create a json file named `data.json` with the following contents:
     {
         "folderId": "[The Google Drive ID of the folder you want to combine in]",
         "formats": [
-            // This will be a list of file formats you want to combine
             {
                 "regex": "[Regular expression with (\\d+) numerical capturing groups",
                 "subgroup": "[Number of subgroups to capture (0 means only 1 ordering group)]",
                 "master": "[Regular expression for the master files]"
             }
-            // ...
         ]
     }
-    // ...
 ]
 ```
+
+You can add multiple folders and multiple formats per folder in both arrays.
 
 To find the folderID, open the folder in google drive and the url should be `https://drive.google.com/drive/u/0/folders/[folderId]`
 
